@@ -121,7 +121,7 @@ if __name__ == "__main__":
     agent, tools_dict = initialize_agent(
         "medrax/docs/system_prompts.txt",
         tools_to_use=selected_tools,
-        model_dir="/model-weights",  # Change this to the path of the model weights
+        model_dir="/h/ahmad/MedRAX/model-weights",  # Change this to the path of the model weights
         temp_dir="temp",  # Change this to the path of the temporary directory
         device="cuda",  # Change this to the device you want to use
         model="gpt-4o",  # Change this to the model you want to use, e.g. gpt-4o-mini
