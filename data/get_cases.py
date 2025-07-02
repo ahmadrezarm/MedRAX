@@ -3,6 +3,27 @@ from bs4 import BeautifulSoup
 import time
 import json
 from tqdm import tqdm
+from frontier_neuro_topics_links import topic_links
+
+def load_topic_links_from_raw_urls(raw_urls):
+    topics = []
+    for url in raw_urls:
+        base = url.split("/research-topics/")[1]
+        slug = base.split("/")[1] if "/" in base else base
+        title = slug.replace("-", " ").title()
+        # Extract specialty between "in" and "volume"/"collection"/"202x"
+        words = slug.split("-")
+        specialty = ""
+        if "in" in words:
+            in_idx = words.index("in")
+            after = words[in_idx + 1:]
+            for i, word in enumerate(after):
+                if word in {"volume", "collection", "2020", "2021", "2022", "2023", "2024"}:
+                    after = after[:i]
+                    break
+            specialty = " ".join(after).title()
+        topics.append({"title": title, "url": url, "specialty": specialty})
+    return topics
 
 
 def get_response(url):
@@ -11,40 +32,44 @@ def get_response(url):
     }
     return requests.get(url, headers=headers)
 
-def get_case_numbers_from_page(page):
-    url = f"https://www.eurorad.org/advanced-search?sort_by=published_at&sort_order=ASC&page={page}&filter%5B0%5D=section%3A40"
 
-    # Remove proxy usage since it's likely triggering the protection
-    response = get_response(url)
-    print(response.text)
 
+def get_papers_from_topic(topic_url):
+    response = get_response(topic_url)
     soup = BeautifulSoup(response.text, "html.parser")
-    spans = soup.find_all("span", class_="case__number small")
 
-    # Remove '#' from the span text and strip extra whitespace
-    numbers = [span.text.strip().replace("#", "").strip() for span in spans]
-    return numbers
+    papers = []
+    for a in soup.find_all("a", {"role": "heading", "aria-level": "2"}):
+        href = a.get("href")
+        title = a.text.strip()
+        if href and title:
+            full_link = "https://www.frontiersin.org" + href
+            papers.append({"title": title, "link": full_link})
 
+    return papers
 
 def main():
-    total_pages = 107  # Pages 0 through 106
-    all_numbers = []
+    all_results = []
 
-    for page in tqdm(range(total_pages)):
-        numbers = get_case_numbers_from_page(page)
-        all_numbers.extend(numbers)
-
-        if page != total_pages - 1 and len(numbers) != 9:
-            print(f"Warning: Page {page} returned {len(numbers)} cases instead of 9")
-
-        # Be kind to the server – avoid hitting it too fast
+    topics = load_topic_links_from_raw_urls(topic_links)
+    for topic in tqdm(topics, desc="Processing topics"):
+        print(f"Processing topic: {topic['title']}")
+        papers = get_papers_from_topic(topic["url"])
+        all_results.append({
+            "topic": topic["title"],
+            "url": topic["url"],
+            "specialty": topic["specialty"],
+            "papers": papers
+        })
         time.sleep(1)
-        break
 
-    with open('case_numbers.json', 'w') as f:
-        json.dump(all_numbers, f)
+    with open('case_report_topics.json', 'w') as f:
+        json.dump(topics, f, indent=2)
 
-    print(f"Saved {len(all_numbers)} case numbers to case_numbers.json")
+    with open('case_reports.json', 'w') as f:
+        json.dump(all_results, f, indent=2)
+
+    print(f"Saved {len(all_results)} topics to case_reports.json")
 
 
 if __name__ == "__main__":
