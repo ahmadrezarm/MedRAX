@@ -43,7 +43,7 @@ def get_papers_from_topic(topic_url):
         href = a.get("href")
         title = a.text.strip()
         if href and title:
-            full_link = "https://www.frontiersin.org" + href
+            full_link = href #"https://www.frontiersin.org" + 
             papers.append({"title": title, "link": full_link})
 
     return papers
