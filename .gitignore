@@ -174,3 +174,4 @@ temp/
 .gradio/
 
 /MedRAX_ENV
+/model-weights
