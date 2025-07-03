@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import time
 import json
 from tqdm import tqdm
-from frontier_neuro_topics_links import topic_links
+from data.neuro_topics_links import topic_links
 
 def load_topic_links_from_raw_urls(raw_urls):
     topics = []
